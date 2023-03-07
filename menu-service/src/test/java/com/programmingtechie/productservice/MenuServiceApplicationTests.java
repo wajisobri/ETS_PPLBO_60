@@ -1,8 +1,8 @@
 package com.programmingtechie.productservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.programmingtechie.productservice.dto.ProductRequest;
-import com.programmingtechie.productservice.repository.ProductRepository;
+import com.programmingtechie.productservice.dto.MenuRequest;
+import com.programmingtechie.productservice.repository.MenuRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @Testcontainers
 @AutoConfigureMockMvc
-class ProductServiceApplicationTests {
+class MenuServiceApplicationTests {
 
     @Container
     static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:4.4.2");
@@ -33,7 +33,7 @@ class ProductServiceApplicationTests {
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
-    private ProductRepository productRepository;
+    private MenuRepository menuRepository;
 
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry dymDynamicPropertyRegistry) {
@@ -42,17 +42,17 @@ class ProductServiceApplicationTests {
 
     @Test
     void shouldCreateProduct() throws Exception {
-        ProductRequest productRequest = getProductRequest();
-        String productRequestString = objectMapper.writeValueAsString(productRequest);
+        MenuRequest menuRequest = getProductRequest();
+        String productRequestString = objectMapper.writeValueAsString(menuRequest);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(productRequestString))
                 .andExpect(status().isCreated());
-        Assertions.assertEquals(1, productRepository.findAll().size());
+        Assertions.assertEquals(1, menuRepository.findAll().size());
     }
 
-    private ProductRequest getProductRequest() {
-        return ProductRequest.builder()
+    private MenuRequest getProductRequest() {
+        return MenuRequest.builder()
                 .name("iPhone 13")
                 .description("iPhone 13")
                 .price(BigDecimal.valueOf(1200))
