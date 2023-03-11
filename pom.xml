@@ -22,6 +22,7 @@
         <module>discovery-server</module>
         <module>api-gateway</module>
         <module>payment-service</module>
+        <module>cafe-service</module>
     </modules>
 
     <properties>
