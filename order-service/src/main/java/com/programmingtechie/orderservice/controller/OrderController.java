@@ -12,33 +12,33 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class OrderController {
 
     private final OrderService orderService;
 
-    @PostMapping
+    @PostMapping(value="/order")
     @ResponseStatus(HttpStatus.CREATED)
     public Order placeOrder(@RequestBody OrderRequest orderRequest) {
         return orderService.placeOrder(orderRequest);
     }
 
-    @PutMapping
+    @GetMapping(value="/orders")
     @ResponseStatus(HttpStatus.OK)
-    public Order changeStatusOrderByOrderNumber(@RequestParam String orderNumber) {
-        return orderService.changeStatusOrderByOrderNumber(orderNumber);
+    public List<OrderResponse> getAllOrders() {
+        return orderService.getAllOrders();
     }
 
-    @GetMapping
+    @GetMapping(value="/order")
     @ResponseStatus(HttpStatus.OK)
     public Order getOrderByOrderNumber(@RequestParam String orderNumber) {
         return orderService.getOrderByOrderNumber(orderNumber);
     }
 
-    @GetMapping(value="/list")
+    @PutMapping(value="/order")
     @ResponseStatus(HttpStatus.OK)
-    public List<OrderResponse> getAllOrders() {
-        return orderService.getAllOrders();
+    public Order changeStatusOrderByOrderNumber(@RequestParam String orderNumber) {
+        return orderService.changeStatusOrderByOrderNumber(orderNumber);
     }
 }

@@ -23,6 +23,7 @@
         <module>api-gateway</module>
         <module>payment-service</module>
         <module>cafe-service</module>
+        <module>consumer-service</module>
     </modules>
 
     <properties>
