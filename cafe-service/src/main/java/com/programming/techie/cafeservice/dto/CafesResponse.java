@@ -1,17 +1,19 @@
-package com.programmingtechie.orderservice.dto;
+package com.programming.techie.cafeservice.dto;
 
-import com.programmingtechie.orderservice.model.Order;
+import com.programming.techie.cafeservice.model.Cafe;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderResponse {
+public class CafesResponse {
     private Integer code;
     private String message;
-    private Order data;
+    private List<Cafe> data;
 }

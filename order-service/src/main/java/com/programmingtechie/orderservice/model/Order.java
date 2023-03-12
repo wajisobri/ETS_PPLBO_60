@@ -1,11 +1,9 @@
 package com.programmingtechie.orderservice.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -14,12 +12,23 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Order {
+    public enum OrderStatus {
+        Created, Unpaid, Paid, Finished, Cancelled
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "order_id")
     private Long id;
     private String orderNumber;
-    private String paymentStatus;
-    @OneToMany(cascade = CascadeType.ALL)
+    private String username;
+    private String restaurantId;
+    private LocalDateTime orderTime = LocalDateTime.now();
+    private OrderStatus orderStatus = OrderStatus.Created;
+    private double totalPrice;
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "order_id")
     private List<OrderLineItems> orderLineItemsList;
 }

@@ -1,8 +1,10 @@
 package com.programmingtechie.menuservice.service;
 
+import com.programmingtechie.menuservice.dto.IngredientResponse;
 import com.programmingtechie.menuservice.dto.MenuRequest;
 import com.programmingtechie.menuservice.dto.MenuResponse;
 import com.programmingtechie.menuservice.dto.MenusResponse;
+import com.programmingtechie.menuservice.model.Ingredient;
 import com.programmingtechie.menuservice.model.Menu;
 import com.programmingtechie.menuservice.repository.MenuRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -82,18 +86,25 @@ public class MenuService {
                 .build();
     }
 
-    public MenuResponse updateMenu(@PathVariable String id, @RequestBody MenuRequest menuRequest) {
+    public MenuResponse updateMenu(String id, MenuRequest menuRequest) {
         try {
             Optional<Menu> menuRepo = menuRepository.findById(id);
             if(menuRepo.isEmpty()) {
                 return null;
             }
 
+            Menu existingMenu = menuRepo.get();
+            String name = menuRequest.getName() != null ? menuRequest.getName() : existingMenu.getName();
+            String description = menuRequest.getDescription() != null ? menuRequest.getDescription() : existingMenu.getDescription();
+            BigDecimal price = menuRequest.getPrice() != null ? menuRequest.getPrice() : existingMenu.getPrice();
+            List<Ingredient> requiredIngredient = menuRequest.getRequiredIngredient() != null ? menuRequest.getRequiredIngredient() : existingMenu.getRequiredIngredient();
+
             Menu menu = Menu.builder()
                     .id(menuRepo.get().getId())
-                    .name(menuRequest.getName())
-                    .description(menuRequest.getDescription())
-                    .price(menuRequest.getPrice())
+                    .name(name)
+                    .description(description)
+                    .price(price)
+                    .requiredIngredient(requiredIngredient)
                     .build();
 
             menu = menuRepository.save(menu);
@@ -169,5 +180,61 @@ public class MenuService {
                     .message("An error occurred while processing the request")
                     .build();
         }
+    }
+
+    public MenuResponse addRequiredIngredient(String menuId, Ingredient ingredient) {
+        try {
+            Optional<Menu> menuRepo = menuRepository.findById(menuId);
+            if(menuRepo.isEmpty()) {
+                return null;
+            }
+
+            List<Ingredient> addedIngredient = new ArrayList<>();
+            if (menuRepo.get().getRequiredIngredient() != null) {
+                addedIngredient.addAll(menuRepo.get().getRequiredIngredient());
+            }
+            addedIngredient.add(ingredient);
+
+            Menu menu = Menu.builder()
+                    .id(menuRepo.get().getId())
+                    .name(menuRepo.get().getName())
+                    .description(menuRepo.get().getDescription())
+                    .price(menuRepo.get().getPrice())
+                    .requiredIngredient(addedIngredient)
+                    .build();
+
+            menu = menuRepository.save(menu);
+            if(menu != null) {
+                return MenuResponse.builder()
+                        .code(200)
+                        .message("Menu updated, ingredient added")
+                        .data(menu)
+                        .build();
+            } else {
+                return MenuResponse.builder()
+                        .code(500)
+                        .message("Failed to update menu, ingredient not added")
+                        .build();
+            }
+        } catch (DataAccessException e) {
+            return MenuResponse.builder()
+                    .code(500)
+                    .message("An error occurred while accessing the database")
+                    .build();
+        } catch (Exception e) {
+            return MenuResponse.builder()
+                    .code(500)
+                    .message(e.getMessage())
+                    .build();
+        }
+    }
+
+    public List<Ingredient> getRequiredIngredients(String menuId) {
+        // Retrieve the menu item from the repository
+        Menu menu = menuRepository.findById(menuId).orElseThrow(() -> new RuntimeException("Menu item not found"));
+
+        // Return the list of required ingredients for the menu item
+        List<Ingredient> ingredients = menu.getRequiredIngredient();
+        return ingredients;
     }
 }

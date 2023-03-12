@@ -1,6 +1,5 @@
-package com.programmingtechie.orderservice.dto;
+package com.programming.techie.cafeservice.dto;
 
-import com.programmingtechie.orderservice.model.Order;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,8 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderResponse {
+public class CafeIngredientResponse {
     private Integer code;
     private String message;
-    private Order data;
+    private CafeIngredientRequest data;
 }

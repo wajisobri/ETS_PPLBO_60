@@ -1,6 +1,6 @@
-package com.programmingtechie.menuservice.dto;
+package com.programmingtechie.orderservice.dto;
 
-import com.programmingtechie.menuservice.model.Ingredient;
+import com.programmingtechie.orderservice.model.Ingredient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +13,8 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class MenuRequest {
+public class MenuResponse {
+    private String id;
     private String name;
     private String description;
     private BigDecimal price;

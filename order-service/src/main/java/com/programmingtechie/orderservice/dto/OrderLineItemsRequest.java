@@ -4,11 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.math.BigDecimal;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderRequest {
-    private List<OrderLineItemsRequest> orderLineItemsList;
+public class OrderLineItemsRequest {
+    private String menuId;
+    private Integer quantity;
 }

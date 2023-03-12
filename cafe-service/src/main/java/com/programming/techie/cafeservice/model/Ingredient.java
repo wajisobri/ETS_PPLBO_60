@@ -1,4 +1,4 @@
-package com.programmingtechie.menuservice.model;
+package com.programming.techie.cafeservice.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,20 +7,20 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.math.BigDecimal;
-import java.util.List;
+import javax.persistence.*;
 
-@Document(value = "menu")
+@Document(value = "ingredient")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Data
-public class Menu {
-
+public class Ingredient {
     @Id
     private String id;
     private String name;
-    private String description;
-    private BigDecimal price;
-    private List<Ingredient> requiredIngredient;
+    private Integer quantity;
+    private String unitOfMeasurement;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cafe_id", nullable = false)
+    private Cafe cafe;
 }
