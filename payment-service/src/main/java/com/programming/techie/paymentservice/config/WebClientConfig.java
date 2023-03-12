@@ -1,4 +1,4 @@
-package com.programming.techie.cafeservice.config;
+package com.programming.techie.paymentservice.config;
 
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;

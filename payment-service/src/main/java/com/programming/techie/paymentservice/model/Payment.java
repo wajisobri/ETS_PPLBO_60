@@ -1,4 +1,4 @@
-package com.programming.techie.cafeservice.model;
+package com.programming.techie.paymentservice.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,8 +18,9 @@ import java.sql.Timestamp;
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "payment_id")
     private Long id;
-    private Timestamp transactionNumber;
-    private String orderNumber;
-    private BigDecimal totalPrice;
+    private String orderId;
+    private BigDecimal amount;
+    private String paymentStatus;
 }

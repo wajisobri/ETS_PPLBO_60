@@ -1,11 +1,14 @@
 package com.programmingtechie.orderservice.service;
 
+import com.programmingtechie.orderservice.config.RabbitMQConfig;
 import com.programmingtechie.orderservice.dto.*;
 import com.programmingtechie.orderservice.model.Ingredient;
 import com.programmingtechie.orderservice.model.Order;
 import com.programmingtechie.orderservice.model.OrderLineItems;
 import com.programmingtechie.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +16,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,8 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final WebClient.Builder webClientBuilder;
+    @Autowired
+    private final AmqpTemplate amqpTemplate;
 
     public OrderResponse placeOrder(String username, String cafeId, OrderRequest orderRequest) {
         Order order = new Order();
@@ -54,23 +58,14 @@ public class OrderService {
                 })
                 .toList();
 
-        // Calculate total price of each order line item and set it to the DTO
-        List<OrderLineItems> orderLineItemsWithPrice = orderLineItems.stream()
-                .map(orderLineItem -> {
-                    BigDecimal totalPrice = orderLineItem.getMenuPrice().multiply(new BigDecimal(orderLineItem.getQuantity()));
-                    orderLineItem.setMenuPrice(totalPrice);
-                    return orderLineItem;
-                })
-                .collect(Collectors.toList());
-
         // Set order line items
-        order.setOrderLineItemsList(orderLineItemsWithPrice);
+        order.setOrderLineItemsList(orderLineItems);
         order.setUsername(username);
         order.setRestaurantId(cafeId);
 
         // Calculate total price of the order
-        BigDecimal totalPrice = orderLineItemsWithPrice.stream()
-                .map(OrderLineItems::getMenuPrice)
+        BigDecimal totalPrice = orderLineItems.stream()
+                .map(item -> item.getMenuPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         order.setTotalPrice(totalPrice);
 
@@ -80,6 +75,11 @@ public class OrderService {
         // If all ingredients are in stock, save the order
         if (allIngredientsInStock) {
             orderRepository.save(order);
+            // Send payment request message to RabbitMQ
+            OrderEvent orderEvent = new OrderEvent();
+            orderEvent.setOrderId(order.getOrderNumber());
+            orderEvent.setAmount(order.getTotalPrice());
+            amqpTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, orderEvent);
             return OrderResponse.builder()
                     .code(200)
                     .message("Order placed")

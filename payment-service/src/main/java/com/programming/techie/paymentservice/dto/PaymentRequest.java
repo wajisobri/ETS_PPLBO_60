@@ -1,4 +1,4 @@
-package com.programming.techie.cafeservice.dto;
+package com.programming.techie.paymentservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,8 +13,6 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PaymentRequest {
-    private Long id;
-    private Timestamp transactionNumber;
-    private String orderNumber;
-    private BigDecimal totalPrice;
+    private String orderId;
+    private BigDecimal amount;
 }

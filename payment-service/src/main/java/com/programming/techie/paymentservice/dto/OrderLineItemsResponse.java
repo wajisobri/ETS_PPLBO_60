@@ -1,4 +1,4 @@
-package com.programming.techie.cafeservice.dto;
+package com.programming.techie.paymentservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
