@@ -3,6 +3,7 @@ package com.programmingtechie.orderservice.model;
 import lombok.*;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,7 +28,7 @@ public class Order {
     private String restaurantId;
     private LocalDateTime orderTime = LocalDateTime.now();
     private OrderStatus orderStatus = OrderStatus.Created;
-    private double totalPrice;
+    private BigDecimal totalPrice;
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "order_id")
     private List<OrderLineItems> orderLineItemsList;

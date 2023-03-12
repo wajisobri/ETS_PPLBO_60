@@ -15,10 +15,4 @@ public class Ingredient {
     private String name;
     private Integer quantity;
     private String unitOfMeasurement;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cafe_id", nullable = false)
-    private Cafe cafe;
-
-    public Ingredient(Ingredient ingredient) {
-    }
 }

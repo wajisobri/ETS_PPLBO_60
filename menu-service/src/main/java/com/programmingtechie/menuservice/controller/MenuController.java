@@ -4,6 +4,7 @@ import com.programmingtechie.menuservice.dto.MenuRequest;
 import com.programmingtechie.menuservice.dto.MenuResponse;
 import com.programmingtechie.menuservice.dto.MenusResponse;
 import com.programmingtechie.menuservice.model.Ingredient;
+import com.programmingtechie.menuservice.model.Menu;
 import com.programmingtechie.menuservice.service.MenuService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,8 +26,8 @@ public class MenuController {
 
     @GetMapping(value="/menu/get")
     @ResponseStatus(HttpStatus.OK)
-    public MenuResponse getMenuParams(@RequestParam String menuId) {
-        return menuService.getMenu(menuId);
+    public Menu getMenuParams(@RequestParam String menuId) {
+        return menuService.getMenu(menuId).getData();
     }
 
     @GetMapping(value="/menus")

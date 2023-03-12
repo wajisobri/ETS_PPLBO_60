@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,10 +54,25 @@ public class OrderService {
                 })
                 .toList();
 
+        // Calculate total price of each order line item and set it to the DTO
+        List<OrderLineItems> orderLineItemsWithPrice = orderLineItems.stream()
+                .map(orderLineItem -> {
+                    BigDecimal totalPrice = orderLineItem.getMenuPrice().multiply(new BigDecimal(orderLineItem.getQuantity()));
+                    orderLineItem.setMenuPrice(totalPrice);
+                    return orderLineItem;
+                })
+                .collect(Collectors.toList());
+
         // Set order line items
-        order.setOrderLineItemsList(orderLineItems);
+        order.setOrderLineItemsList(orderLineItemsWithPrice);
         order.setUsername(username);
         order.setRestaurantId(cafeId);
+
+        // Calculate total price of the order
+        BigDecimal totalPrice = orderLineItemsWithPrice.stream()
+                .map(OrderLineItems::getMenuPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        order.setTotalPrice(totalPrice);
 
         // Check inventory for all required ingredients
         boolean allIngredientsInStock = checkIngredientsInStock(cafeId, orderLineItems);
@@ -69,7 +86,10 @@ public class OrderService {
                     .data(order)
                     .build();
         } else {
-            throw new IllegalArgumentException("Menu is not in stock, please try again later");
+            return OrderResponse.builder()
+                    .code(400)
+                    .message("Menu is not in stock, please try again later")
+                    .build();
         }
     }
 
@@ -95,15 +115,17 @@ public class OrderService {
                 // Add all ingredients to the list
                 if (requiredIngredients != null) {
                     for (Ingredient ingredient : requiredIngredients) {
-                        Ingredient ingredientCopy = new Ingredient(ingredient);
-                        ingredientCopy.setQuantity(ingredientCopy.getQuantity() * orderLineItem.getQuantity());
+                        Ingredient ingredientCopy = new Ingredient();
+                        ingredientCopy.setName(ingredient.getName());
+                        ingredientCopy.setQuantity(ingredient.getQuantity() * orderLineItem.getQuantity());
+                        ingredientCopy.setUnitOfMeasurement(ingredient.getUnitOfMeasurement());
                         ingredientList.add(ingredientCopy);
                     }
                 }
             }
         }
 
-        // Check inventory for all ingredients
+// Check inventory for all ingredients
         for (Ingredient ingredient : ingredientList) {
             // Check inventory for each ingredient
             InventoryResponse inventoryResponse = webClientBuilder.build()
@@ -118,7 +140,8 @@ public class OrderService {
                     .bodyToMono(InventoryResponse.class)
                     .block();
 
-            if (inventoryResponse != null && inventoryResponse.getData().getQuantity() < ingredient.getQuantity()) {
+            if (inventoryResponse != null && inventoryResponse.getData() != null && inventoryResponse.getData().getQuantity() != null &&
+                    inventoryResponse.getData().getQuantity().compareTo(ingredient.getQuantity()) < 0) {
                 // If the required quantity is not available, return false
                 return false;
             }
