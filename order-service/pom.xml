@@ -57,5 +57,9 @@
             <artifactId>spring-beans</artifactId>
             <version>5.3.18</version>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
     </dependencies>
 </project>
