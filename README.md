@@ -58,15 +58,15 @@ Download: [https://www.erlang.org/downloads](https://www.erlang.org/downloads)
  - [x] Menjalankan konsep discovery pattern untuk komunikasi proses IPC
 
 ## Business Capabilities and Service Mapping
-![Business Capabilities and Service Mapping](https://raw.githubusercontent.com/wajisobri/ETS_PPLBO_60/master/other/PPLBO-Nomor%201.drawio.png?token=GHSAT0AAAAAAB4SDLWIS4ZEE6NY27GZSVOIZAPA4GA)
+![Business Capabilities and Service Mapping](../blob/master/other/PPLBO-Nomor%201.drawio.png?raw=true)
 
 ## Service Architecture (in progress)
-![Service Architecture](https://raw.githubusercontent.com/wajisobri/ETS_PPLBO_60/master/other/PPLBO-Nomor%204.drawio.png?token=GHSAT0AAAAAAB4SDLWIGD5BK7LBIPTWTVHWZAPA6DA)
+![Service Architecture](../blob/master/other/PPLBO-Nomor%204.drawio.png)
 Dalam arsitektur, terdapat dua jenis komunikasi:
 1. Synchronous Communication
 Komunikasi jenis ini digunakan pada service yang tidak menerapkan "event-driven" design pattern
 
-2. Asynchronous Communication
+1. Asynchronous Communication
 Komunikasi jenis ini digunakan pada service yang menerapkan "event-driven" design pattern
 
 ## Design Pattern used
