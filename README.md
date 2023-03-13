@@ -21,6 +21,9 @@ Download: [https://www.erlang.org/downloads](https://www.erlang.org/downloads)
  - [x] MySQL
  - [x] MongoDB
 
+## API Tester (Postman)
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/17008485-5205e1d1-dcbd-47b9-ab9e-25fab5df06b9?action=collection%2Ffork&collection-url=entityId%3D17008485-5205e1d1-dcbd-47b9-ab9e-25fab5df06b9%26entityType%3Dcollection%26workspaceId%3Daca6b7f9-c619-4e69-b65f-936467387cf8)
+
 ## Services
 
 **Cafe Service**
@@ -86,6 +89,3 @@ Contohnya, ketika terdapat pesanan baru melalui Order Service, maka Order Servic
 Penggunaan event-sourcing digunakan untuk menyimpan event-sourced aggregate sebagai urutan event. Setiap event mepresentasikan perubahan state. State terkini dapat diketahui dengan me-replay event tersebut.
 
 Berdasarkan hal tersebut, event sourcing dapat memantau histori aggregate sehingga memudahkan auditing. Namun, perlu menggunakan CQRS (Command Query Responsibility Segragation) sebagai pattern untuk melakukan query pada event yang disimpan. Selain itu, akan dilakukan pengambilan dengan Snapshot dalam jangka waktu tertentu untuk mempercepat performa
-
-## API Tester (Postman)
-[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/17008485-5205e1d1-dcbd-47b9-ab9e-25fab5df06b9?action=collection%2Ffork&collection-url=entityId%3D17008485-5205e1d1-dcbd-47b9-ab9e-25fab5df06b9%26entityType%3Dcollection%26workspaceId%3Daca6b7f9-c619-4e69-b65f-936467387cf8)
