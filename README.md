@@ -58,10 +58,10 @@ Download: [https://www.erlang.org/downloads](https://www.erlang.org/downloads)
  - [x] Menjalankan konsep discovery pattern untuk komunikasi proses IPC
 
 ## Business Capabilities and Service Mapping
-![Business Capabilities and Service Mapping](../blob/master/other/PPLBO-Nomor%201.drawio.png?raw=true)
+![Business Capabilities and Service Mapping](../master/other/PPLBO-Nomor%201.drawio.png?raw=true)
 
 ## Service Architecture (in progress)
-![Service Architecture](../blob/master/other/PPLBO-Nomor%204.drawio.png)
+![Service Architecture](../master/other/PPLBO-Nomor%204.drawio.png)
 Dalam arsitektur, terdapat dua jenis komunikasi:
 1. Synchronous Communication
 Komunikasi jenis ini digunakan pada service yang tidak menerapkan "event-driven" design pattern
