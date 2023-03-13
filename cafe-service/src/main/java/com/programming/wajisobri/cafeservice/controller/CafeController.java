@@ -65,6 +65,12 @@ public class CafeController {
         return cafeService.updateIngredient(cafeId, ingredientId, ingredientRequest);
     }
 
+    @PutMapping(value="/cafe/ingredient/{cafeId}")
+    @ResponseStatus(HttpStatus.OK)
+    public IngredientResponse reduceIngredientByName(@PathVariable String cafeId, @RequestParam String ingredientName, @RequestParam Integer reducedQuantity) {
+        return cafeService.reduceIngredientByName(cafeId, ingredientName, reducedQuantity);
+    }
+
     @DeleteMapping(value="/cafe/ingredient/{cafeId}/{ingredientId}")
     @ResponseStatus(HttpStatus.OK)
     public IngredientResponse deleteIngredient(@PathVariable String cafeId, @PathVariable String ingredientId) {

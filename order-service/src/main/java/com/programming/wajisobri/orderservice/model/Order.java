@@ -16,7 +16,7 @@ import java.util.List;
 @Builder
 public class Order {
     public enum OrderStatus {
-        Created, Unpaid, Paid, Finished, Cancelled
+        Created, Unpaid, Paid, Delivered, Finished, Cancelled
     }
 
     @Id

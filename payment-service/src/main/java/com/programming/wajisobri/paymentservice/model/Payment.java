@@ -8,6 +8,7 @@ import lombok.Setter;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "t_payments")
@@ -16,11 +17,22 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Payment {
+    public enum PaymentStatus {
+        Cancelled, Unpaid, Paid
+    }
+
+    public enum PaymentMethod {
+        Transfer, Cash
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "payment_id")
     private Long id;
-    private String orderId;
+    private String paymentNumber;
+    private String orderNumber;
     private BigDecimal amount;
-    private String paymentStatus;
+    private PaymentMethod paymentMethod;
+    private PaymentStatus paymentStatus;
+    private LocalDateTime paymentTime;
 }

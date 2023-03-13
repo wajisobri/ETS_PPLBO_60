@@ -23,9 +23,12 @@ import org.springframework.util.ErrorHandler;
 @EnableRabbit
 @Configuration
 public class RabbitMQConfig {
-    public static final String EXCHANGE_NAME = "order-exchange";
-    public static final String QUEUE_NAME = "order-queue";
-    public static final String ROUTING_KEY = "order.payment";
+    public static final String ORDER_EXCHANGE_NAME = "order-exchange";
+    public static final String PAYMENT_EXCHANGE_NAME = "payment-exchange";
+    public static final String ORDER_QUEUE_NAME = "order-queue";
+    public static final String PAYMENT_QUEUE_NAME = "payment-queue";
+    public static final String ORDER_ROUTING_KEY = "order.payment";
+    public static final String PAYMENT_ROUTING_KEY = "payment.order";
     @Value("${spring.rabbitmq.username}")
     private String username;
     @Value("${spring.rabbitmq.password}")
@@ -35,16 +38,28 @@ public class RabbitMQConfig {
     @Value("${spring.rabbitmq.virtualhost}")
     private String virtualHost;
     @Bean
-    public Queue queue() {
-        return new Queue(QUEUE_NAME, false);
+    public Queue orderQueue() {
+        return new Queue(ORDER_QUEUE_NAME, false);
     }
     @Bean
-    public DirectExchange exchange() {
-        return new DirectExchange(EXCHANGE_NAME);
+    public Queue paymentQueue() {
+        return new Queue(PAYMENT_QUEUE_NAME, false);
     }
     @Bean
-    public Binding binding(Queue queue, DirectExchange exchange) {
-        return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
+    public DirectExchange orderExchange() {
+        return new DirectExchange(ORDER_EXCHANGE_NAME);
+    }
+    @Bean
+    public DirectExchange paymentExchange() {
+        return new DirectExchange(PAYMENT_EXCHANGE_NAME);
+    }
+    @Bean
+    public Binding orderPaymentBinding(Queue orderQueue, DirectExchange orderExchange) {
+        return BindingBuilder.bind(orderQueue).to(orderExchange).with(ORDER_ROUTING_KEY);
+    }
+    @Bean
+    public Binding paymentOrderBinding(Queue paymentQueue, DirectExchange paymentExchange) {
+        return BindingBuilder.bind(paymentQueue).to(paymentExchange).with(PAYMENT_ROUTING_KEY);
     }
     @Bean
     public MessageConverter jsonMessageConverter() {
@@ -64,9 +79,7 @@ public class RabbitMQConfig {
     @Bean
     public AmqpTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setDefaultReceiveQueue(QUEUE_NAME);
         rabbitTemplate.setMessageConverter(jsonMessageConverter());
-        rabbitTemplate.setReplyAddress(queue().getName());
         rabbitTemplate.setUseDirectReplyToContainer(false);
         return rabbitTemplate;
     }

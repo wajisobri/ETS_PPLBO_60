@@ -1,6 +1,6 @@
-package com.programming.wajisobri.paymentservice.dto;
+package com.programming.wajisobri.orderservice.dto;
 
-import com.programming.wajisobri.paymentservice.model.Payment;
+import com.programming.wajisobri.orderservice.model.Ingredient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PaymentResponse {
+public class IngredientResponse {
     private Integer code;
     private String message;
-    private Payment data;
+    private Ingredient data;
 }

@@ -1,41 +1,128 @@
 package com.programming.wajisobri.paymentservice.service;
 
 import com.programming.wajisobri.paymentservice.config.RabbitMQConfig;
+import com.programming.wajisobri.paymentservice.controller.PaymentController;
 import com.programming.wajisobri.paymentservice.dto.OrderEvent;
+import com.programming.wajisobri.paymentservice.dto.PaymentEvent;
+import com.programming.wajisobri.paymentservice.dto.PaymentRequest;
 import com.programming.wajisobri.paymentservice.dto.PaymentResponse;
+import com.programming.wajisobri.paymentservice.model.Payment;
 import com.programming.wajisobri.paymentservice.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.UUID;
+
 @Service
-@RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class PaymentService {
     private final PaymentRepository paymentRepository;
-    private final Logger logger = LoggerFactory.getLogger(PaymentService.class);
+
+    @Autowired
+    private final AmqpTemplate amqpTemplate;
 
     public void receivePaymentRequest(OrderEvent orderEvent) {
-        logger.info("Received payment request for order id: " + orderEvent.getEventData().get("order_number"));
+        log.info("Received payment request for order number: " + orderEvent.getEventData().get("order_number"));
 
-        // Process the payment
-        boolean paymentSuccess = processPayment(orderEvent);
-
-        // Send payment response to the queue
-        PaymentResponse paymentResponse = new PaymentResponse(orderEvent.getEventData().get("order_number").toString(), paymentSuccess);
-
-        logger.info("Sent payment response for order id: " + orderEvent.getEventData().get("order_number"));
+        if(orderEvent.getEventType().toString() == "Order_Created") {
+            // Process the payment
+            boolean paymentSuccess = processPayment(orderEvent);
+            log.info("Sent payment response for order number: " + orderEvent.getEventData().get("order_number"));
+        }
     }
 
     private boolean processPayment(OrderEvent orderEvent) {
         // Payment processing logic goes here
-        return true;
+        Payment newPayment = new Payment();
+        newPayment.setPaymentNumber(UUID.randomUUID().toString());
+        newPayment.setOrderNumber(orderEvent.getEventData().get("order_number").toString());
+        newPayment.setPaymentStatus(Payment.PaymentStatus.Unpaid);
+        newPayment.setAmount(BigDecimal.valueOf(Double.parseDouble(orderEvent.getEventData().get("total_price").toString())));
+
+        try {
+            // Save payment to database
+            Payment savedPayment = paymentRepository.save(newPayment);
+
+            // Send payment response to the queue
+            PaymentEvent paymentEvent = new PaymentEvent();
+            paymentEvent.setEventId(UUID.randomUUID().toString());
+            paymentEvent.setEventType(PaymentEvent.EventType.Payment_Created);
+            HashMap<String, Object> eventData = new HashMap<>();
+            eventData.put("payment_number", savedPayment.getPaymentNumber());
+            eventData.put("order_number", savedPayment.getOrderNumber());
+            eventData.put("amount", savedPayment.getAmount());
+            eventData.put("payment_status", savedPayment.getPaymentStatus());
+            paymentEvent.setEventData(eventData);
+            paymentEvent.setEventTime(LocalDateTime.now());
+
+            amqpTemplate.convertAndSend(RabbitMQConfig.PAYMENT_EXCHANGE_NAME, RabbitMQConfig.PAYMENT_ROUTING_KEY, paymentEvent);
+
+            // Generate invoice
+            log.info("Invoice has been generated");
+            log.info("Payment processed, please complete the payment immediately");
+            log.info(savedPayment.getPaymentNumber().toString());
+            return true;
+        } catch (DataAccessException e) {
+            log.info(e.getMessage());
+            return false;
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            return false;
+        }
+    }
+
+    public PaymentResponse payInvoice(PaymentRequest paymentRequest) {
+        Payment retrievedPayment = paymentRepository.findByOrderNumber(paymentRequest.getOrderNumber());
+
+        retrievedPayment.setPaymentStatus(Payment.PaymentStatus.Paid);
+        retrievedPayment.setPaymentMethod(Payment.PaymentMethod.valueOf(paymentRequest.getPaymentMethod().toString()));
+        retrievedPayment.setPaymentTime(LocalDateTime.now());
+
+        try {
+            Payment updatedPayment = paymentRepository.save(retrievedPayment);
+
+            // Send payment response to the queue
+            PaymentEvent paymentEvent = new PaymentEvent();
+            paymentEvent.setEventId(UUID.randomUUID().toString());
+            paymentEvent.setEventType(PaymentEvent.EventType.Payment_Finished);
+            HashMap<String, Object> eventData = new HashMap<>();
+            eventData.put("payment_number", updatedPayment.getPaymentNumber());
+            eventData.put("order_number", updatedPayment.getOrderNumber());
+            eventData.put("amount", updatedPayment.getAmount());
+            eventData.put("payment_method", updatedPayment.getPaymentMethod());
+            eventData.put("payment_status", updatedPayment.getPaymentStatus());
+            eventData.put("payment_time", updatedPayment.getPaymentTime());
+            paymentEvent.setEventData(eventData);
+            paymentEvent.setEventTime(LocalDateTime.now());
+
+            amqpTemplate.convertAndSend(RabbitMQConfig.PAYMENT_EXCHANGE_NAME, RabbitMQConfig.PAYMENT_ROUTING_KEY, paymentEvent);
+
+            return PaymentResponse.builder()
+                    .code(200)
+                    .message("Orders retrieved")
+                    .data(updatedPayment)
+                    .build();
+        } catch (DataAccessException e) {
+            return PaymentResponse.builder()
+                    .code(500)
+                    .message("An error occurred while accessing the database")
+                    .build();
+        } catch (Exception e) {
+            return PaymentResponse.builder()
+                    .code(500)
+                    .message("An error occurred while processing the request")
+                    .build();
+        }
     }
 }

@@ -1,20 +1,20 @@
 package com.programming.wajisobri.orderservice.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 
+@Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
-@Data
-@ToString
-public class OrderEvent {
+public class PaymentEvent {
     public enum EventType {
-        Order_Created, Order_Unpaid, Order_Paid, Order_Delivered, Order_Finished, Order_Cancelled
+        Payment_Created, Payment_Finished, Payment_Cancelled
     }
     private String eventId;
     private EventType eventType;

@@ -1,10 +1,13 @@
 package com.programming.wajisobri.orderservice.controller;
 
+import com.programming.wajisobri.orderservice.config.RabbitMQConfig;
 import com.programming.wajisobri.orderservice.dto.OrderResponse;
 import com.programming.wajisobri.orderservice.dto.OrderRequest;
 import com.programming.wajisobri.orderservice.dto.OrdersResponse;
+import com.programming.wajisobri.orderservice.dto.PaymentEvent;
 import com.programming.wajisobri.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,10 +30,15 @@ public class OrderController {
         return orderService.getAllOrders();
     }
 
-    @GetMapping(value="/order")
+    @GetMapping(value="/order/{orderNumber}")
     @ResponseStatus(HttpStatus.OK)
-    public OrderResponse getOrderByOrderNumber(@RequestParam String orderNumber) {
+    public OrderResponse getOrderByOrderNumber(@PathVariable String orderNumber) {
         return orderService.getOrderByOrderNumber(orderNumber);
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.PAYMENT_QUEUE_NAME)
+    public void receivePaymentRequest(PaymentEvent paymentEvent) {
+        orderService.receivePaymentResponse(paymentEvent);
     }
 
 //    @PutMapping(value="/order")

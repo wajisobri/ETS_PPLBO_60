@@ -372,4 +372,32 @@ public class CafeService {
                     .build();
         }
     }
+
+    public IngredientResponse reduceIngredientByName(String cafeId, String ingredientName, Integer reducedQuantity) {
+        Optional<Ingredient> ingredientRepo = ingredientRepository.findByCafeIdAndName(cafeId, ingredientName);
+        if (!ingredientRepo.isPresent()) {
+            return IngredientResponse.builder()
+                    .code(404)
+                    .message("Ingredient with name " + ingredientName + " in cafe with id " + cafeId + " not found")
+                    .build();
+        }
+
+        Ingredient retrievedIngredient = ingredientRepo.get();
+        retrievedIngredient.setQuantity(reducedQuantity);
+
+        try {
+            Ingredient updatedIngredient = ingredientRepository.save(retrievedIngredient);
+
+            return IngredientResponse.builder()
+                    .code(200)
+                    .message("Ingredient updated with name " + updatedIngredient.getName() + " to cafe with " + cafeId)
+                    .data(updatedIngredient)
+                    .build();
+        } catch (Exception e) {
+            return IngredientResponse.builder()
+                    .code(500)
+                    .message("An error occurred while processing the request")
+                    .build();
+        }
+    }
 }

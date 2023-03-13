@@ -13,15 +13,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Transactional
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -29,6 +30,7 @@ public class OrderService {
     @Autowired
     private final AmqpTemplate amqpTemplate;
 
+    @Transactional
     public OrderResponse placeOrder(String username, String cafeId, OrderRequest orderRequest) {
         Order order = new Order();
         order.setOrderNumber(UUID.randomUUID().toString());
@@ -76,26 +78,35 @@ public class OrderService {
 
         // If all ingredients are in stock, save the order
         if (allIngredientsInStock) {
-            orderRepository.save(order);
-            // Send payment request message to RabbitMQ
-            OrderEvent orderEvent = new OrderEvent();
-            orderEvent.setEventId(UUID.randomUUID().toString());
-            orderEvent.setEventType(OrderEvent.EventType.Order_Created);
-            HashMap<String, Object> eventData = new HashMap<>();
-            eventData.put("order_number", order.getOrderNumber());
-            eventData.put("username", order.getUsername());
-            eventData.put("restaurant_id", order.getRestaurantId());
-            eventData.put("order_time", order.getOrderTime());
-            eventData.put("order_status", order.getOrderStatus());
-            eventData.put("total_price", order.getTotalPrice());
-            eventData.put("order_line_items", order.getOrderLineItemsList());
-            orderEvent.setEventData(eventData);
-            amqpTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, orderEvent);
-            return OrderResponse.builder()
-                    .code(200)
-                    .message("Order placed")
-                    .data(order)
-                    .build();
+            try {
+                orderRepository.save(order);
+                // Send payment request message to RabbitMQ
+                OrderEvent orderEvent = new OrderEvent();
+                orderEvent.setEventId(UUID.randomUUID().toString());
+                orderEvent.setEventType(OrderEvent.EventType.Order_Created);
+                HashMap<String, Object> eventData = new HashMap<>();
+                eventData.put("order_number", order.getOrderNumber());
+                eventData.put("username", order.getUsername());
+                eventData.put("restaurant_id", order.getRestaurantId());
+                eventData.put("order_time", order.getOrderTime());
+                eventData.put("order_status", order.getOrderStatus());
+                eventData.put("total_price", order.getTotalPrice());
+                eventData.put("order_line_items", order.getOrderLineItemsList());
+                orderEvent.setEventData(eventData);
+                orderEvent.setEventTime(LocalDateTime.now());
+                amqpTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE_NAME, RabbitMQConfig.ORDER_ROUTING_KEY, orderEvent);
+                return OrderResponse.builder()
+                        .code(200)
+                        .message("Order placed")
+                        .data(order)
+                        .build();
+            } catch (Exception e) {
+                // Handle exception
+                return OrderResponse.builder()
+                        .code(500)
+                        .message("Failed to place order: " + e.getMessage())
+                        .build();
+            }
         } else {
             return OrderResponse.builder()
                     .code(400)
@@ -104,6 +115,7 @@ public class OrderService {
         }
     }
 
+    @Transactional
     private boolean checkIngredientsInStock(String cafeId, List<OrderLineItems> orderLineItemsList) {
         List<Ingredient> ingredientList = new ArrayList<>();
 
@@ -136,7 +148,7 @@ public class OrderService {
             }
         }
 
-// Check inventory for all ingredients
+        // Check inventory for all ingredients
         for (Ingredient ingredient : ingredientList) {
             // Check inventory for each ingredient
             InventoryResponse inventoryResponse = webClientBuilder.build()
@@ -151,9 +163,37 @@ public class OrderService {
                     .bodyToMono(InventoryResponse.class)
                     .block();
 
-            if (inventoryResponse != null && inventoryResponse.getData() != null && inventoryResponse.getData().getQuantity() != null &&
-                    inventoryResponse.getData().getQuantity().compareTo(ingredient.getQuantity()) < 0) {
-                // If the required quantity is not available, return false
+            if (inventoryResponse != null && inventoryResponse.getData() != null && inventoryResponse.getData().getQuantity() != null) {
+                BigDecimal currentQuantity = BigDecimal.valueOf(inventoryResponse.getData().getQuantity());
+                BigDecimal requiredQuantity = BigDecimal.valueOf(ingredient.getQuantity());
+
+                if (currentQuantity.compareTo(requiredQuantity) >= 0) {
+                    // If the required quantity is available, reduce the inventory
+                    BigDecimal newQuantity = currentQuantity.subtract(requiredQuantity);
+
+                    IngredientResponse ingredientResponse = webClientBuilder.build()
+                            .put()
+                            .uri(uriBuilder -> uriBuilder
+                                    .scheme("http")
+                                    .host("cafe-service")
+                                    .path("/api/cafe/ingredient/{cafeId}")
+                                    .queryParam("ingredientName", ingredient.getName())
+                                    .queryParam("reducedQuantity", newQuantity)
+                                    .build(cafeId))
+                            .retrieve()
+                            .bodyToMono(IngredientResponse.class)
+                            .block();
+
+                    if(ingredientResponse.getCode() != 200) {
+                        return false;
+                    }
+
+                } else {
+                    // If the required quantity is not available, return false
+                    return false;
+                }
+            } else {
+                // If the inventory response is null, return false
                 return false;
             }
         }
@@ -234,6 +274,7 @@ public class OrderService {
         }
     }
 
+    @Transactional
     public OrderResponse cancelOrder(String orderNumber) {
         try {
             // Retrieve the order from the repository
@@ -311,5 +352,21 @@ public class OrderService {
                     .build();
         }
 
+    }
+
+    @Transactional
+    public void receivePaymentResponse(PaymentEvent paymentEvent) {
+        log.info("Received payment response for order number: " + paymentEvent.getEventData().get("order_number"));
+        if(paymentEvent.getEventType() == PaymentEvent.EventType.Payment_Created) {
+            // change status order to unpaid
+            Order retrievedOrder = orderRepository.findByOrderNumber(paymentEvent.getEventData().get("order_number").toString());
+            retrievedOrder.setOrderStatus(Order.OrderStatus.Unpaid);
+            orderRepository.save(retrievedOrder);
+        } else if(paymentEvent.getEventType() == PaymentEvent.EventType.Payment_Finished) {
+            // change status order to finished
+            Order retrievedOrder = orderRepository.findByOrderNumber(paymentEvent.getEventData().get("order_number").toString());
+            retrievedOrder.setOrderStatus(Order.OrderStatus.Paid);
+            orderRepository.save(retrievedOrder);
+        }
     }
 }

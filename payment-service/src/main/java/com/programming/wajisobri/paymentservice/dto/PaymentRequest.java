@@ -1,5 +1,6 @@
 package com.programming.wajisobri.paymentservice.dto;
 
+import com.programming.wajisobri.paymentservice.model.Payment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,6 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PaymentRequest {
-    private String orderId;
-    private BigDecimal amount;
+    private String orderNumber;
+    private Payment.PaymentMethod paymentMethod;
 }
