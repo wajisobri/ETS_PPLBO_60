@@ -279,7 +279,8 @@ public class OrderService {
 
             // Check if the order exists
             if (order != null) {
-                if(order.getOrderStatus() != Order.OrderStatus.Finished) {
+                // available if order status is just only created or unpaid
+                if(order.getOrderStatus() == Order.OrderStatus.Created || order.getOrderStatus() == Order.OrderStatus.Unpaid) {
                     // Set the order status to cancel
                     order.setOrderStatus(Order.OrderStatus.Cancelled);
 
