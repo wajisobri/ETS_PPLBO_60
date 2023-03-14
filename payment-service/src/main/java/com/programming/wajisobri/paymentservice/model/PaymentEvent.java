@@ -1,4 +1,4 @@
-package com.programming.wajisobri.paymentservice.dto;
+package com.programming.wajisobri.paymentservice.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

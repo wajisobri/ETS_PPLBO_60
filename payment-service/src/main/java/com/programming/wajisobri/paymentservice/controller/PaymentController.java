@@ -1,7 +1,7 @@
 package com.programming.wajisobri.paymentservice.controller;
 
 import com.programming.wajisobri.paymentservice.config.RabbitMQConfig;
-import com.programming.wajisobri.paymentservice.dto.OrderEvent;
+import com.programming.wajisobri.paymentservice.model.OrderEvent;
 import com.programming.wajisobri.paymentservice.dto.PaymentRequest;
 import com.programming.wajisobri.paymentservice.dto.PaymentResponse;
 import com.programming.wajisobri.paymentservice.service.PaymentService;

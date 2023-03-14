@@ -1,4 +1,4 @@
-package com.programming.wajisobri.paymentservice.dto;
+package com.programming.wajisobri.paymentservice.model;
 
 import lombok.*;
 
@@ -14,7 +14,7 @@ import java.util.HashMap;
 @ToString
 public class OrderEvent {
     public enum EventType {
-        Order_Created, Order_Unpaid, Order_Paid, Order_Delivered, Order_Finished, Order_Cancelled
+        Order_Created, Order_Unpaid, Order_Paid, Order_Preparing, Order_Delivering, Order_Finished, Order_Cancelled
     }
     private String eventId;
     private EventType eventType;

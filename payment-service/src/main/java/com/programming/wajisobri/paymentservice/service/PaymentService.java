@@ -1,21 +1,23 @@
 package com.programming.wajisobri.paymentservice.service;
 
 import com.programming.wajisobri.paymentservice.config.RabbitMQConfig;
-import com.programming.wajisobri.paymentservice.controller.PaymentController;
-import com.programming.wajisobri.paymentservice.dto.OrderEvent;
-import com.programming.wajisobri.paymentservice.dto.PaymentEvent;
+import com.programming.wajisobri.paymentservice.dto.OrderCustomResponse;
+import com.programming.wajisobri.paymentservice.dto.OrderResponse;
+import com.programming.wajisobri.paymentservice.model.OrderEvent;
+import com.programming.wajisobri.paymentservice.model.PaymentEvent;
 import com.programming.wajisobri.paymentservice.dto.PaymentRequest;
 import com.programming.wajisobri.paymentservice.dto.PaymentResponse;
 import com.programming.wajisobri.paymentservice.model.Payment;
 import com.programming.wajisobri.paymentservice.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.criterion.Order;
 import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,6 +30,7 @@ import java.util.UUID;
 @Slf4j
 public class PaymentService {
     private final PaymentRepository paymentRepository;
+    private final WebClient.Builder webClientBuilder;
 
     @Autowired
     private final AmqpTemplate amqpTemplate;
@@ -38,7 +41,17 @@ public class PaymentService {
         if(orderEvent.getEventType().toString() == "Order_Created") {
             // Process the payment
             boolean paymentSuccess = processPayment(orderEvent);
-            log.info("Sent payment response for order number: " + orderEvent.getEventData().get("order_number"));
+            if(paymentSuccess) {
+                log.info("Sent payment response for order number: " + orderEvent.getEventData().get("order_number"));
+            } else {
+                PaymentEvent paymentEvent = new PaymentEvent();
+                paymentEvent.setEventId(UUID.randomUUID().toString());
+                paymentEvent.setEventType(PaymentEvent.EventType.Payment_Cancelled);
+                HashMap<String, Object> eventData = new HashMap<>();
+                eventData.put("order_number", orderEvent.getEventData().get("order_number"));
+                paymentEvent.setEventData(eventData);
+                paymentEvent.setEventTime(LocalDateTime.now());
+            }
         }
     }
 

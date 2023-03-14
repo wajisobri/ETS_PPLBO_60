@@ -1,4 +1,4 @@
-package com.programming.wajisobri.orderservice.model;
+package com.programming.wajisobri.paymentservice.model;
 
 import lombok.*;
 
@@ -33,3 +33,4 @@ public class Order {
     @JoinColumn(name = "order_id")
     private List<OrderLineItems> orderLineItemsList;
 }
+

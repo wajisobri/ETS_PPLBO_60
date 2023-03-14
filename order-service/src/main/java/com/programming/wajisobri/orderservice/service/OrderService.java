@@ -2,9 +2,7 @@ package com.programming.wajisobri.orderservice.service;
 
 import com.programming.wajisobri.orderservice.config.RabbitMQConfig;
 import com.programming.wajisobri.orderservice.dto.*;
-import com.programming.wajisobri.orderservice.model.Ingredient;
-import com.programming.wajisobri.orderservice.model.Order;
-import com.programming.wajisobri.orderservice.model.OrderLineItems;
+import com.programming.wajisobri.orderservice.model.*;
 import com.programming.wajisobri.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
@@ -287,14 +284,34 @@ public class OrderService {
                     order.setOrderStatus(Order.OrderStatus.Cancelled);
 
                     // Save the updated order in the repository
-                    orderRepository.save(order);
+                    try {
+                        Order cancelledOrder = orderRepository.save(order);
 
-                    // Return a success response
-                    return OrderResponse.builder()
-                            .code(200)
-                            .message("Order with order number " + orderNumber + " has been cancelled")
-                            .data(order)
-                            .build();
+                        // restore each ingredient quantity
+                        boolean restoreIngredient = restoreIngredient(cancelledOrder.getRestaurantId(), cancelledOrder.getOrderLineItemsList());
+                        if(restoreIngredient) {
+                            // Return a success response
+                            return OrderResponse.builder()
+                                    .code(200)
+                                    .message("Order with order number " + orderNumber + " has been cancelled")
+                                    .data(order)
+                                    .build();
+                        } else {
+                            // Return an error response
+                            return OrderResponse.builder()
+                                    .code(500)
+                                    .message("Error occurred while cancelling order")
+                                    .data(null)
+                                    .build();
+                        }
+                    } catch (Exception e) {
+                        // Return an error response
+                        return OrderResponse.builder()
+                                .code(500)
+                                .message("Error occurred while cancelling order: " + e.getMessage())
+                                .data(null)
+                                .build();
+                    }
                 } else {
                     // Return a bad request response
                     return OrderResponse.builder()
@@ -355,6 +372,92 @@ public class OrderService {
     }
 
     @Transactional
+    public boolean restoreIngredient(String cafeId, List<OrderLineItems> orderLineItemsList) {
+        List<Ingredient> ingredientList = new ArrayList<>();
+
+        for (OrderLineItems orderLineItem : orderLineItemsList) {
+            // Retrieve ingredient list for each menu item
+            MenuResponse menuResponse = webClientBuilder.build()
+                    .get()
+                    .uri(uriBuilder -> uriBuilder
+                            .scheme("http")
+                            .host("menu-service")
+                            .path("/api/menu/get")
+                            .queryParam("menuId", orderLineItem.getMenuId())
+                            .build())
+                    .retrieve()
+                    .bodyToMono(MenuResponse.class)
+                    .block();
+            if (menuResponse != null) {
+                List<Ingredient> requiredIngredients = menuResponse.getRequiredIngredient();
+
+                // Add all ingredients to the list
+                if (requiredIngredients != null) {
+                    for (Ingredient ingredient : requiredIngredients) {
+                        Ingredient ingredientCopy = new Ingredient();
+                        ingredientCopy.setName(ingredient.getName());
+                        ingredientCopy.setQuantity(ingredient.getQuantity() * orderLineItem.getQuantity());
+                        ingredientCopy.setUnitOfMeasurement(ingredient.getUnitOfMeasurement());
+                        ingredientList.add(ingredientCopy);
+                    }
+                }
+            }
+        }
+
+        // Check inventory for all ingredients
+        for (Ingredient ingredient : ingredientList) {
+            // Check inventory for each ingredient
+            InventoryResponse inventoryResponse = webClientBuilder.build()
+                    .get()
+                    .uri(uriBuilder -> uriBuilder
+                            .scheme("http")
+                            .host("cafe-service")
+                            .path("/api/cafe/ingredient/{cafeId}")
+                            .queryParam("ingredientName", ingredient.getName())
+                            .build(cafeId))
+                    .retrieve()
+                    .bodyToMono(InventoryResponse.class)
+                    .block();
+
+            if (inventoryResponse != null && inventoryResponse.getData() != null && inventoryResponse.getData().getQuantity() != null) {
+                BigDecimal currentQuantity = BigDecimal.valueOf(inventoryResponse.getData().getQuantity());
+                BigDecimal requiredQuantity = BigDecimal.valueOf(ingredient.getQuantity());
+
+                if (currentQuantity.compareTo(requiredQuantity) >= 0) {
+                    // If the required quantity is available, reduce the inventory
+                    BigDecimal newQuantity = currentQuantity.add(requiredQuantity);
+
+                    IngredientResponse ingredientResponse = webClientBuilder.build()
+                            .put()
+                            .uri(uriBuilder -> uriBuilder
+                                    .scheme("http")
+                                    .host("cafe-service")
+                                    .path("/api/cafe/ingredient/{cafeId}")
+                                    .queryParam("ingredientName", ingredient.getName())
+                                    .queryParam("reducedQuantity", newQuantity)
+                                    .build(cafeId))
+                            .retrieve()
+                            .bodyToMono(IngredientResponse.class)
+                            .block();
+
+                    if(ingredientResponse.getCode() != 200) {
+                        return false;
+                    }
+
+                } else {
+                    // If the required quantity is not available, return false
+                    return false;
+                }
+            } else {
+                // If the inventory response is null, return false
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Transactional
     public void receivePaymentResponse(PaymentEvent paymentEvent) {
         log.info("Received payment response for order number: " + paymentEvent.getEventData().get("order_number"));
         if(paymentEvent.getEventType() == PaymentEvent.EventType.Payment_Created) {
@@ -367,6 +470,13 @@ public class OrderService {
             Order retrievedOrder = orderRepository.findByOrderNumber(paymentEvent.getEventData().get("order_number").toString());
             retrievedOrder.setOrderStatus(Order.OrderStatus.Paid);
             orderRepository.save(retrievedOrder);
+        } else if(paymentEvent.getEventType() == PaymentEvent.EventType.Payment_Cancelled) {
+            // change status order to cancelled and restore quantity
+            try {
+                cancelOrder(paymentEvent.getEventData().get("order_number").toString());
+            } catch (Exception e) {
+                log.info(e.getMessage());
+            }
         }
     }
 }

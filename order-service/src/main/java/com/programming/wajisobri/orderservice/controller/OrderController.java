@@ -4,7 +4,7 @@ import com.programming.wajisobri.orderservice.config.RabbitMQConfig;
 import com.programming.wajisobri.orderservice.dto.OrderResponse;
 import com.programming.wajisobri.orderservice.dto.OrderRequest;
 import com.programming.wajisobri.orderservice.dto.OrdersResponse;
-import com.programming.wajisobri.orderservice.dto.PaymentEvent;
+import com.programming.wajisobri.orderservice.model.PaymentEvent;
 import com.programming.wajisobri.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -39,6 +39,12 @@ public class OrderController {
     @RabbitListener(queues = RabbitMQConfig.PAYMENT_QUEUE_NAME)
     public void receivePaymentRequest(PaymentEvent paymentEvent) {
         orderService.receivePaymentResponse(paymentEvent);
+    }
+
+    @GetMapping(value="/order/cancel/{orderNumber}")
+    @ResponseStatus(HttpStatus.OK)
+    public OrderResponse cancelOrderByOrderNumber(@PathVariable String orderNumber) {
+        return orderService.cancelOrder(orderNumber);
     }
 
 //    @PutMapping(value="/order")
