@@ -291,6 +291,22 @@ public class OrderService {
                         // restore each ingredient quantity
                         boolean restoreIngredient = restoreIngredient(cancelledOrder.getRestaurantId(), cancelledOrder.getOrderLineItemsList());
                         if(restoreIngredient) {
+                            // Send order event to RabbitMQ
+                            OrderEvent orderEvent = new OrderEvent();
+                            orderEvent.setEventId(UUID.randomUUID().toString());
+                            orderEvent.setEventType(OrderEvent.EventType.Order_Cancelled);
+                            HashMap<String, Object> eventData = new HashMap<>();
+                            eventData.put("order_number", cancelledOrder.getOrderNumber());
+                            eventData.put("username", cancelledOrder.getUsername());
+                            eventData.put("restaurant_id", cancelledOrder.getRestaurantId());
+                            eventData.put("order_time", cancelledOrder.getOrderTime());
+                            eventData.put("order_status", cancelledOrder.getOrderStatus());
+                            eventData.put("total_price", cancelledOrder.getTotalPrice());
+                            eventData.put("order_line_items", cancelledOrder.getOrderLineItemsList());
+                            orderEvent.setEventData(eventData);
+                            orderEvent.setEventTime(LocalDateTime.now());
+                            amqpTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE_NAME, RabbitMQConfig.ORDER_ROUTING_KEY, orderEvent);
+
                             // Return a success response
                             return OrderResponse.builder()
                                     .code(200)

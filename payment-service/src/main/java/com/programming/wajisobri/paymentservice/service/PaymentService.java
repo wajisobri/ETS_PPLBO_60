@@ -52,6 +52,20 @@ public class PaymentService {
                 paymentEvent.setEventData(eventData);
                 paymentEvent.setEventTime(LocalDateTime.now());
             }
+        } else if(orderEvent.getEventType().toString() == "Order_Cancelled") {
+            // Cancel payment
+            Payment retrievedPayment = paymentRepository.findByOrderNumber(orderEvent.getEventData().get("order_number").toString());
+            retrievedPayment.setPaymentStatus(Payment.PaymentStatus.Cancelled);
+            try {
+                Payment cancelledPayment = paymentRepository.save(retrievedPayment);
+
+                // Generate cancelled invoice
+                log.info("Payment with order number " + orderEvent.getEventData().get("order_number").toString() + " has been cancelled");
+            } catch (DataAccessException e) {
+                log.info(e.getMessage());
+            } catch (Exception e) {
+                log.info(e.getMessage());
+            }
         }
     }
 
