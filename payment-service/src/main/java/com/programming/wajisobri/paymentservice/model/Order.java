@@ -7,8 +7,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Entity
-@Table(name = "t_orders")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,8 +18,6 @@ public class Order {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "order_id")
     private Long id;
     private String orderNumber;
     private String username;
@@ -29,8 +25,6 @@ public class Order {
     private LocalDateTime orderTime = LocalDateTime.now();
     private OrderStatus orderStatus = OrderStatus.Created;
     private BigDecimal totalPrice;
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "order_id")
     private List<OrderLineItems> orderLineItemsList;
 }
 
