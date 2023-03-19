@@ -11,7 +11,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -23,7 +22,6 @@ import java.util.Optional;
 public class CafeService {
     private final CafeRepository cafeRepository;
     private final IngredientRepository ingredientRepository;
-    private final WebClient.Builder webClientBuilder;
 
     public CafeResponse createCafe(CafeRequest cafeRequest) {
         try {
