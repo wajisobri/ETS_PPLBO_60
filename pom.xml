@@ -18,12 +18,12 @@
     <modules>
         <module>menu-service</module>
         <module>order-service</module>
-        <module>inventory-service</module>
         <module>discovery-server</module>
         <module>api-gateway</module>
         <module>payment-service</module>
         <module>cafe-service</module>
         <module>consumer-service</module>
+        <module>notification-service</module>
     </modules>
 
     <properties>

@@ -1,17 +1,16 @@
 package com.programming.wajisobri.paymentservice.service;
 
+import com.programming.wajisobri.paymentservice.dto.PaymentResponse;
 import com.programming.wajisobri.paymentservice.config.RabbitMQConfig;
-import com.programming.wajisobri.paymentservice.dto.OrderCustomResponse;
-import com.programming.wajisobri.paymentservice.dto.OrderResponse;
+import com.programming.wajisobri.paymentservice.dto.PaymentsResponse;
 import com.programming.wajisobri.paymentservice.model.OrderEvent;
 import com.programming.wajisobri.paymentservice.model.PaymentEvent;
 import com.programming.wajisobri.paymentservice.dto.PaymentRequest;
-import com.programming.wajisobri.paymentservice.dto.PaymentResponse;
 import com.programming.wajisobri.paymentservice.model.Payment;
+import com.programming.wajisobri.paymentservice.repository.PaymentEventRepository;
 import com.programming.wajisobri.paymentservice.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.criterion.Order;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -22,6 +21,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
@@ -30,6 +31,7 @@ import java.util.UUID;
 @Slf4j
 public class PaymentService {
     private final PaymentRepository paymentRepository;
+    private final PaymentEventRepository paymentEventRepository;
     private final WebClient.Builder webClientBuilder;
 
     @Autowired
@@ -95,6 +97,9 @@ public class PaymentService {
 
             amqpTemplate.convertAndSend(RabbitMQConfig.PAYMENT_EXCHANGE_NAME, RabbitMQConfig.PAYMENT_ROUTING_KEY, paymentEvent);
 
+            // Save Event to Payment Event Store
+            paymentEventRepository.save(paymentEvent);
+
             // Generate invoice
             log.info("Invoice has been generated");
             log.info("Payment processed, please complete the payment immediately");
@@ -149,6 +154,62 @@ public class PaymentService {
             return PaymentResponse.builder()
                     .code(500)
                     .message("An error occurred while processing the request")
+                    .build();
+        }
+    }
+
+    public PaymentsResponse getAllPayment() {
+        try {
+            List<Payment> payments = paymentRepository.findAll();
+
+            payments = payments.stream().map(this::mapToPaymentResponse).toList();
+            return PaymentsResponse.builder()
+                    .code(200)
+                    .message("Payment retrieved")
+                    .data(payments)
+                    .build();
+        } catch (DataAccessException e) {
+            return PaymentsResponse.builder()
+                    .code(500)
+                    .message("An error occurred while accessing the database")
+                    .build();
+        } catch (Exception e) {
+            return PaymentsResponse.builder()
+                    .code(500)
+                    .message("An error occurred while processing the request")
+                    .build();
+        }
+    }
+
+    private Payment mapToPaymentResponse(Payment payment) {
+        return Payment.builder()
+                .id(payment.getId())
+                .paymentNumber(payment.getPaymentNumber())
+                .orderNumber(payment.getOrderNumber())
+                .amount(payment.getAmount())
+                .paymentMethod(payment.getPaymentMethod())
+                .paymentStatus(payment.getPaymentStatus())
+                .paymentTime(payment.getPaymentTime())
+                .build();
+    }
+
+    public PaymentResponse getPaymentByPaymentNumber(String paymentNumber) {
+        try {
+            Payment payment = paymentRepository.findByPaymentNumber(paymentNumber);
+            return PaymentResponse.builder()
+                    .code(200)
+                    .message("Payment with payment number " + paymentNumber + " retrieved")
+                    .data(payment)
+                    .build();
+        } catch (NoSuchElementException e) {
+            return PaymentResponse.builder()
+                    .code(404)
+                    .message(e.getMessage())
+                    .build();
+        } catch (DataAccessException e) {
+            return PaymentResponse.builder()
+                    .code(500)
+                    .message(e.getMessage())
                     .build();
         }
     }

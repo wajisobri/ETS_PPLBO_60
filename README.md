@@ -61,6 +61,10 @@ Download: [https://www.erlang.org/downloads](https://www.erlang.org/downloads)
 **Discovery Server (Service Registry) Service**
  - [x] Menjalankan konsep discovery pattern untuk komunikasi proses IPC
 
+**Notification Service**
+ - [x] Menerima informasi dari service lain, seperti Order Service, Reservation Service, ketika terjadi perubahan pada pesanan atau reservasi pelanggan. 
+ - [x] Mengirimkan notifikasi kepada pelanggan tentang status pesanan, meliputi konfirmasi pemesanan, pembaruan status pesanan, dan pengingat tagihan pembayaran
+
 **UPCOMING SERVICE**
 - Cashier Service
 - Kitchen Service
@@ -69,7 +73,6 @@ Download: [https://www.erlang.org/downloads](https://www.erlang.org/downloads)
 - Delivery Tracking Service
 - Cart Service
 - Reporting Service
-- Notification Service
 
 ## Business Capabilities and Service Mapping
 ![Business Capabilities and Service Mapping](../master/other/PPLBO-Nomor%201.drawio.png?raw=true)
@@ -101,9 +104,10 @@ Event-Driven menggunakan service khusus yang dinamakan Message Broker. Message B
 
 Contohnya, ketika terdapat pesanan baru melalui Order Service, maka Order Service akan mem-publish event tersebut ke message broker. Kemudian, message broker yang bertugas memdistribusikan event tersebut ke service yang membutuhkan, misalnya Customer Service, Payment Service, dan Notification Service.
 
-Dalam program ini, Event Sourcing diimplementasi pada interaksi secara asynchronous antara service _order_ dan _payment_. Untul lebih detailnya terdapat pada file berikut:
-1. [Event Sourcing dalam Order Service](https://github.com/wajisobri/ETS_PPLBO_60/tree/master/order-service/src/main/java/com/programming/wajisobri/orderservice/service) : `placeOrder()` dan `cancelOrder()` akan menghasilkan dan mengirim event message order ke RabbitMQ. Kemudian, di-consume oleh service yang membutuhkan (payment)
-2. [Event Sourcing dalam Payment Service](https://github.com/wajisobri/ETS_PPLBO_60/tree/master/payment-service/src/main/java/com/programming/wajisobri/paymentservice/service) : if `processPayment()` dan `payInvoice()`  akan menghasilkan dan mengirim event message payment ke RabbitMQ. Kemudian, di-consume oleh service yang membutuhkan (order) 
+Dalam program ini, Event-Driven diimplementasi pada interaksi secara asynchronous antara service _order_ dan _payment_. Untul lebih detailnya terdapat pada file berikut:
+1. [Event-Driven dalam Order Service](https://github.com/wajisobri/ETS_PPLBO_60/tree/master/order-service/src/main/java/com/programming/wajisobri/orderservice/service) : `placeOrder()` dan `cancelOrder()` akan menghasilkan dan mengirim event message order ke RabbitMQ. Kemudian, di-consume oleh service yang membutuhkan (payment)
+2. [Event-Driven dalam Payment Service](https://github.com/wajisobri/ETS_PPLBO_60/tree/master/payment-service/src/main/java/com/programming/wajisobri/paymentservice/service) : if `processPayment()` dan `payInvoice()`  akan menghasilkan dan mengirim event message payment ke RabbitMQ. Kemudian, di-consume oleh service yang membutuhkan (order)
+3. [Event-Driven dalam Notification Service](https://github.com/wajisobri/ETS_PPLBO_60/tree/master/payment-service/src/main/java/com/programming/wajisobri/notificationservice/service) : listen for `placeOrder()` and trigger `pushNotification()`
 
 Tujuannya, agar komunikasi antar service dapat terjadi secara asynchronous untuk meningkatkan performa. Sehingga service _order_ tidak perlu menunggu proses pada _payment_ selesai untuk melanjutkan proses lain.
 

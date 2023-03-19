@@ -2,8 +2,8 @@ package com.programming.wajisobri.cafeservice.service;
 
 import com.programming.wajisobri.cafeservice.model.Cafe;
 import com.programming.wajisobri.cafeservice.model.Ingredient;
-import com.programming.wajisobri.cafeservice.repository.CafeRepository;
 import com.programming.wajisobri.cafeservice.repository.IngredientRepository;
+import com.programming.wajisobri.cafeservice.repository.CafeRepository;
 import com.programming.wajisobri.cafeservice.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

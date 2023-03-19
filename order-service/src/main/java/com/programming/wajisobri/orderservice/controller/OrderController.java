@@ -1,7 +1,7 @@
 package com.programming.wajisobri.orderservice.controller;
 
-import com.programming.wajisobri.orderservice.config.RabbitMQConfig;
 import com.programming.wajisobri.orderservice.dto.OrderResponse;
+import com.programming.wajisobri.orderservice.config.RabbitMQConfig;
 import com.programming.wajisobri.orderservice.dto.OrderRequest;
 import com.programming.wajisobri.orderservice.dto.OrdersResponse;
 import com.programming.wajisobri.orderservice.model.PaymentEvent;

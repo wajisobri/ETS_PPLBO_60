@@ -6,11 +6,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PaymentRequest {
-    private String orderNumber;
-    private Payment.PaymentMethod paymentMethod;
+public class PaymentsResponse {
+    private Integer code;
+    private String message;
+    private List<Payment> data;
 }

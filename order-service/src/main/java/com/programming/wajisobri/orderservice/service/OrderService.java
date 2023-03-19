@@ -3,6 +3,7 @@ package com.programming.wajisobri.orderservice.service;
 import com.programming.wajisobri.orderservice.config.RabbitMQConfig;
 import com.programming.wajisobri.orderservice.dto.*;
 import com.programming.wajisobri.orderservice.model.*;
+import com.programming.wajisobri.orderservice.repository.OrderEventRepository;
 import com.programming.wajisobri.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.util.*;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final OrderEventRepository orderEventRepository;
     private final WebClient.Builder webClientBuilder;
     @Autowired
     private final AmqpTemplate amqpTemplate;
@@ -92,6 +94,11 @@ public class OrderService {
                 orderEvent.setEventData(eventData);
                 orderEvent.setEventTime(LocalDateTime.now());
                 amqpTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE_NAME, RabbitMQConfig.ORDER_ROUTING_KEY, orderEvent);
+                amqpTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE_NAME, RabbitMQConfig.NOTIFICATION_ROUTING_KEY, orderEvent);
+
+                // Save Event to Order Event Store
+                orderEventRepository.save(orderEvent);
+
                 return OrderResponse.builder()
                         .code(200)
                         .message("Order placed")
@@ -306,6 +313,7 @@ public class OrderService {
                             orderEvent.setEventData(eventData);
                             orderEvent.setEventTime(LocalDateTime.now());
                             amqpTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE_NAME, RabbitMQConfig.ORDER_ROUTING_KEY, orderEvent);
+                            amqpTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE_NAME, RabbitMQConfig.NOTIFICATION_ROUTING_KEY, orderEvent);
 
                             // Return a success response
                             return OrderResponse.builder()
