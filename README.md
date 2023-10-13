@@ -1,5 +1,5 @@
 ﻿# ETS PPLBO Praktek
-## Food Ordering System on Microservices
+## Simple Food Ordering System on Microservices
 
 Nama 	: Sobri Waskito Aji  
 NIM : 201524060  
